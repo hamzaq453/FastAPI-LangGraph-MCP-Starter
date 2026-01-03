@@ -3,13 +3,18 @@
 Each node represents a step in the agent's reasoning process.
 """
 
+import logging
+
 from langchain_core.messages import AIMessage, ToolMessage
 from langgraph.prebuilt import ToolNode
 
 from app.agent.state import AgentState
 from app.config import settings
 from app.core.llm_factory import get_llm
-from app.mcp.tools import calculator, todo, weather
+from app.mcp.tools import calculator, weather
+from app.mcp.tools import todo_simple as todo  # Use simple in-memory TODO for agent
+
+logger = logging.getLogger(__name__)
 
 
 def create_tool_node() -> ToolNode:
@@ -137,13 +142,35 @@ async def call_model(state: AgentState) -> dict:
         get_weather_tool,
     ]
     
-    llm = get_llm()
-    llm_with_tools = llm.bind_tools(tools)
+    try:
+        llm = get_llm()
+        llm_with_tools = llm.bind_tools(tools)
+        
+        # Log the input messages
+        logger.info(f"Calling LLM with {len(state['messages'])} messages")
+        logger.debug(f"Messages: {state['messages']}")
+        
+        # Call LLM
+        response = await llm_with_tools.ainvoke(state["messages"])
+        
+        # Log the response
+        logger.info(f"LLM response type: {type(response)}")
+        logger.info(f"LLM response content: {response.content if hasattr(response, 'content') else 'No content'}")
+        logger.info(f"LLM response tool_calls: {response.tool_calls if hasattr(response, 'tool_calls') else 'No tool_calls'}")
+        
+        # Check if response is empty
+        if not response.content and (not hasattr(response, 'tool_calls') or not response.tool_calls):
+            logger.error("LLM returned empty response!")
+            # Return a default response to avoid the error
+            from langchain_core.messages import AIMessage
+            return {"messages": [AIMessage(content="I apologize, but I encountered an issue processing your request. Please try again.")]}
+        
+        return {"messages": [response]}
     
-    # Call LLM
-    response = await llm_with_tools.ainvoke(state["messages"])
-    
-    return {"messages": [response]}
+    except Exception as e:
+        logger.error(f"Error in call_model: {e}", exc_info=True)
+        from langchain_core.messages import AIMessage
+        return {"messages": [AIMessage(content=f"Error: {str(e)}")]}
 
 
 def should_continue(state: AgentState) -> str:

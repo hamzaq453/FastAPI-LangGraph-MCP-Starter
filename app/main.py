@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -20,7 +21,7 @@ async def lifespan(app: FastAPI):
     """
     Application lifespan manager.
     
-    Handles startup and shutdown events.
+    Handles startup and shutdown events, including checkpointer initialization.
     """
     # Startup
     setup_logging()
@@ -29,10 +30,22 @@ async def lifespan(app: FastAPI):
     # Create database tables if they don't exist
     await create_db_and_tables()
     
-    yield
-    
-    # Shutdown (if needed)
-    pass
+    # Initialize PostgreSQL checkpointer for conversation memory
+    # Use async context manager to manage connection lifecycle
+    async with AsyncPostgresSaver.from_conn_string(settings.database_url) as checkpointer:
+        # Setup checkpoint tables
+        await checkpointer.setup()
+        
+        # Store checkpointer in app state for access in routes
+        app.state.checkpointer = checkpointer
+        
+        print(f"✓ Checkpointer initialized with PostgreSQL")
+        print(f"✓ Database: {settings.database_url.split('@')[1] if '@' in settings.database_url else 'configured'}")
+        
+        yield
+        
+        # Cleanup happens automatically when exiting async context
+        print("Shutting down checkpointer...")
 
 
 # Create FastAPI app

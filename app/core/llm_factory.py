@@ -28,7 +28,16 @@ class LLMFactory:
             
         Returns:
             Configured ChatOpenAI instance.
+            
+        Raises:
+            ValueError: If OPENROUTER_API_KEY is not configured
         """
+        if not settings.openrouter_api_key:
+            raise ValueError(
+                "OPENROUTER_API_KEY not configured. "
+                "Please set it in your .env file to use the LLM."
+            )
+        
         return ChatOpenAI(
             model=model_name or settings.model_name,
             temperature=temperature or settings.model_temperature,

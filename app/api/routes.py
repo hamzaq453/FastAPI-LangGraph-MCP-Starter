@@ -20,20 +20,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Global checkpointer instance (initialized on startup)
-_checkpointer = None
-
-
-async def get_agent_graph():
-    """Get or create agent graph with checkpointer."""
-    global _checkpointer
-    if _checkpointer is None:
-        from app.agent.checkpointer import get_checkpointer
-        _checkpointer = await get_checkpointer()
-    
-    from app.agent.graph import create_agent_graph
-    return create_agent_graph(checkpointer=_checkpointer)
-
 
 @router.get("/health", response_model=HealthResponse)
 async def health_check():
@@ -54,10 +40,14 @@ async def chat(
     
     Requires authentication if AUTH_ENABLED=true in config.
     Rate limited to prevent abuse.
+    Supports conversation memory via session_id.
     """
     try:
-        # Get agent graph with checkpointer
-        agent_graph = await get_agent_graph()
+        # Get checkpointer from app state
+        checkpointer = request.app.state.checkpointer
+        
+        # Create agent graph with checkpointer
+        agent_graph = create_agent_graph(checkpointer=checkpointer)
         
         # Generate or use provided session ID for conversation memory
         session_id = chat_request.session_id or str(uuid.uuid4())
@@ -114,11 +104,15 @@ async def chat_stream(
     
     Requires authentication if AUTH_ENABLED=true in config.
     Rate limited to prevent abuse.
+    Supports conversation memory via session_id.
     """
     async def event_generator() -> AsyncGenerator[str, None]:
         try:
-            # Get agent graph with checkpointer
-            agent_graph = await get_agent_graph()
+            # Get checkpointer from app state
+            checkpointer = request.app.state.checkpointer
+            
+            # Create agent graph with checkpointer
+            agent_graph = create_agent_graph(checkpointer=checkpointer)
             
             # Generate or use provided session ID
             sid = session_id or str(uuid.uuid4())

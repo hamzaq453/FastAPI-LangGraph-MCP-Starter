@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # OpenRouter API Configuration
-    openrouter_api_key: str
+    openrouter_api_key: str = ""
     
     # LLM Configuration
     model_name: str = "openai/gpt-4o"
