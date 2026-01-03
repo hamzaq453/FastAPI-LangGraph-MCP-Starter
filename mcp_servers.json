@@ -1,0 +1,33 @@
+{
+  "servers": {
+    "local": {
+      "type": "builtin",
+      "enabled": true,
+      "description": "Built-in tools (TODO, calculator, weather)"
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "./workspace"],
+      "enabled": false,
+      "description": "Filesystem operations - read/write files"
+    },
+    "github": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      },
+      "enabled": false,
+      "description": "GitHub repository operations"
+    },
+    "postgres": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost/mydb"],
+      "enabled": false,
+      "description": "PostgreSQL database queries"
+    }
+  }
+}

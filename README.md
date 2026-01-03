@@ -21,6 +21,7 @@ Production-ready starter template for building AI agents with **FastAPI** (API l
 - **Conversation Memory**: LangGraph checkpointing for multi-turn conversations
 - **API Key Authentication**: Secure your endpoints (optional)
 - **Rate Limiting**: Prevent API abuse (100 req/min default)
+- **Multi-MCP Server Support**: Connect to multiple MCP servers dynamically
 - **LangSmith Tracing**: Full observability for agent workflows
 - **Structured Logging**: JSON logs for production monitoring
 
@@ -245,6 +246,49 @@ RATE_LIMIT_PER_MINUTE=100
 ```
 
 Returns `429 Too Many Requests` when limit exceeded.
+
+### Multi-MCP Server Support
+
+Connect to multiple MCP servers to extend your agent's capabilities:
+
+**Configuration File:** `mcp_servers.json`
+
+```json
+{
+  "servers": {
+    "local": {
+      "type": "builtin",
+      "enabled": true,
+      "description": "Built-in tools"
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "./workspace"],
+      "enabled": true,
+      "description": "File operations"
+    }
+  }
+}
+```
+
+**Features:**
+- Dynamic tool loading from multiple servers
+- Enable/disable servers via configuration
+- Graceful error handling (continues with available servers)
+- Tool namespacing to avoid conflicts
+
+**Available MCP Servers:**
+- `@modelcontextprotocol/server-filesystem` - File operations
+- `@modelcontextprotocol/server-github` - GitHub API
+- `@modelcontextprotocol/server-postgres` - Database queries
+- Custom servers - Build your own!
+
+**Environment Variables:**
+```env
+MCP_SERVERS_CONFIG=mcp_servers.json
+MCP_TIMEOUT=30
+```
 
 ## 🧪 Testing
 

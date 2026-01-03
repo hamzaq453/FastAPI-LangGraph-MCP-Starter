@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     json_logs: bool = False
     
+    # MCP Server Configuration
+    mcp_servers_config: str = "mcp_servers.json"
+    mcp_timeout: int = 30  # seconds
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
